@@ -17,7 +17,8 @@ from .routers import (
     locations_router,
     rewards_router,
     notifications_router,
-    admin_router
+    admin_router,
+    files_router
 )
 
 @asynccontextmanager
@@ -39,6 +40,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=settings.CORS_ORIGIN_REGEX or None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -55,13 +57,15 @@ app.include_router(locations_router.router, prefix=settings.API_V1_STR)
 app.include_router(rewards_router.router, prefix=settings.API_V1_STR)
 app.include_router(notifications_router.router, prefix=settings.API_V1_STR)
 app.include_router(admin_router.router, prefix=settings.API_V1_STR)
+app.include_router(files_router.router, prefix=settings.API_V1_STR)
 
 def on_startup():
     Base.metadata.create_all(bind=engine)
     
     db = Session(bind=engine)
     try:
-        seed_database(db)
+        if settings.SEED_DEMO_DATA:
+            seed_database(db)
     finally:
         db.close()
 

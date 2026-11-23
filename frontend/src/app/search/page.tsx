@@ -19,7 +19,7 @@ import {
   CheckCircle2,
   ChevronDown
 } from "lucide-react";
-import { api, getMediaUrl } from "../../lib/api";
+import { api, assetUrl, onImgError } from "../../lib/api";
 import { Item, Location, MatchResult, ScoreBreakdown } from "../../lib/types";
 import Link from "next/link";
 
@@ -466,7 +466,7 @@ function SearchPageContent() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {items.map((item, idx) => {
-              const primaryImg = getMediaUrl(item.images?.[0]?.file_url || "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&auto=format&fit=crop&q=80");
+              const primaryImg = assetUrl(item.images?.[0]?.file_url) || "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&auto=format&fit=crop&q=80";
               const isFound = item.type === "found";
               const match = matchResults.find((m) => m.item.id === item.id);
 
@@ -479,6 +479,7 @@ function SearchPageContent() {
                     <img
                       src={primaryImg}
                       alt={item.name}
+                      onError={onImgError}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
 

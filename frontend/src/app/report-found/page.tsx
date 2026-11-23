@@ -20,7 +20,7 @@ import {
   ArrowLeft,
   Award
 } from "lucide-react";
-import { api, getMediaUrl } from "../../lib/api";
+import { api, API_ORIGIN, validateImages } from "../../lib/api";
 import { Location } from "../../lib/types";
 import { useAuth } from "../../lib/authContext";
 import confetti from "canvas-confetti";
@@ -62,7 +62,10 @@ export default function ReportFoundPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
-    const files = Array.from(e.target.files);
+    const { ok: files, error } = validateImages(Array.from(e.target.files), selectedFiles.length);
+    e.target.value = "";
+    setErrorMsg(error);
+    if (!files.length) return;
     const newFiles = [...selectedFiles, ...files];
     setSelectedFiles(newFiles);
 
@@ -177,7 +180,7 @@ export default function ReportFoundPage() {
               {successData.qr_image_url ? (
                 <div className="p-3 bg-white rounded-xl shadow-xs border border-slate-200 inline-block">
                   <img
-                    src={getMediaUrl(successData.qr_image_url)}
+                    src={`${API_ORIGIN}${successData.qr_image_url}`}
                     alt="Generated Item QR"
                     className="w-44 h-44 object-contain mx-auto"
                   />

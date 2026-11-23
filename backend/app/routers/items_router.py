@@ -1,13 +1,14 @@
-import os
-import uuid
+import io
 import json
+import uuid
 from typing import List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from sqlalchemy.orm import Session, joinedload
 
 from ..database import get_db
-from ..models import Item, ItemImage, Location, User, Match, QRCode
+from PIL import Image, UnidentifiedImageError
+from ..models import Item, ItemImage, Location, User, Match, QRCode, StoredFile
 from ..schemas import ItemResponse, ItemDetailResponse, ItemCreate, ItemUpdate, MatchResult, ScoreBreakdown
 from ..auth import get_current_user, get_current_user_optional, require_staff
 from ..config import settings
@@ -17,6 +18,33 @@ from ..rewards import award_points
 from ..notifications import create_notification
 
 router = APIRouter(prefix="/items", tags=["Items"])
+
+IMAGE_FORMATS = {"JPEG": "image/jpeg", "PNG": "image/png", "WEBP": "image/webp", "GIF": "image/gif"}
+
+
+async def read_valid_images(files: List[UploadFile]) -> list:
+    """Validate uploads before anything is saved: count, type, size and real image content."""
+    files = [f for f in files if f.filename]
+    if len(files) > settings.MAX_IMAGES_PER_ITEM:
+        raise HTTPException(status_code=400, detail=f"You can upload at most {settings.MAX_IMAGES_PER_ITEM} photos.")
+    limit = settings.MAX_UPLOAD_MB * 1024 * 1024
+    valid = []
+    for f in files:
+        content = await f.read(limit + 1)
+        if not content:
+            continue
+        if len(content) > limit:
+            raise HTTPException(status_code=413, detail=f"'{f.filename}' is larger than {settings.MAX_UPLOAD_MB} MB.")
+        try:
+            with Image.open(io.BytesIO(content)) as img:
+                content_type = IMAGE_FORMATS.get(img.format or "")
+                img.verify()
+        except (UnidentifiedImageError, OSError, SyntaxError, Image.DecompressionBombError):
+            content_type = None
+        if content_type is None:
+            raise HTTPException(status_code=400, detail=f"'{f.filename}' is not a valid JPG, PNG, WEBP or GIF image.")
+        valid.append((f.filename, content_type, content))
+    return valid
 
 @router.post("/", response_model=ItemDetailResponse)
 async def create_item(
@@ -49,6 +77,8 @@ async def create_item(
     - Awards 10 reward points to finder for found items
     - Runs hybrid similarity search against existing counterpart items & alerts users of matches!
     """
+    valid_images = await read_valid_images(images)
+
     tracking_code = f"CF-2026-{uuid.uuid4().hex[:6].upper()}"
     
     qr_token = None
@@ -97,32 +127,22 @@ async def create_item(
         db.commit()
 
     primary_vector = None
-    for idx, img_file in enumerate(images):
-        if not img_file.filename:
-            continue
-        content = await img_file.read()
-        if len(content) == 0:
-            continue
-            
-        ext = os.path.splitext(img_file.filename)[1].lower() or ".jpg"
-        unique_filename = f"item_{new_item.id}_{idx}_{uuid.uuid4().hex[:8]}{ext}"
-        save_path = os.path.join(settings.UPLOAD_DIR, unique_filename)
-        with open(save_path, "wb") as f:
-            f.write(content)
-            
+    for idx, (filename, content_type, content) in enumerate(valid_images):
+        stored = StoredFile(filename=filename[:255], content_type=content_type, data=content)
+        db.add(stored)
+        db.flush()
+
         vector = extract_image_vector(content)
         if primary_vector is None:
             primary_vector = vector
-            
-        file_url = f"/static/uploads/{unique_filename}"
-        img_record = ItemImage(
+
+        db.add(ItemImage(
             item_id=new_item.id,
-            file_path=save_path,
-            file_url=file_url,
+            file_path=f"db:{stored.id}",
+            file_url=f"{settings.API_V1_STR}/files/{stored.id}",
             is_primary=(idx == 0),
             embedding_json=json.dumps(vector)
-        )
-        db.add(img_record)
+        ))
 
     if primary_vector:
         new_item.image_embedding = json.dumps(primary_vector)

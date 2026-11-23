@@ -1,7 +1,7 @@
 import datetime
 import uuid
 from sqlalchemy import (
-    Column, Integer, String, Text, Float, Boolean, DateTime, ForeignKey
+    Column, Integer, String, Text, Float, Boolean, DateTime, ForeignKey, LargeBinary
 )
 from sqlalchemy.orm import relationship
 from .database import Base
@@ -95,6 +95,16 @@ class Item(Base):
     images = relationship("ItemImage", back_populates="item", cascade="all, delete-orphan")
     claims = relationship("Claim", back_populates="item", cascade="all, delete-orphan")
     qr_info = relationship("QRCode", back_populates="item", uselist=False, cascade="all, delete-orphan")
+
+
+class StoredFile(Base):
+    __tablename__ = "stored_files"
+
+    id = Column(Integer, primary_key=True, index=True)
+    filename = Column(String(255), nullable=False)
+    content_type = Column(String(100), nullable=False)
+    data = Column(LargeBinary, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 
 class ItemImage(Base):

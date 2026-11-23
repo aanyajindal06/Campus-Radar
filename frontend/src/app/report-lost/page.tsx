@@ -18,7 +18,7 @@ import {
   ArrowRight,
   ArrowLeft
 } from "lucide-react";
-import { api } from "../../lib/api";
+import { api, validateImages } from "../../lib/api";
 import { Location } from "../../lib/types";
 import { useAuth } from "../../lib/authContext";
 
@@ -56,7 +56,10 @@ export default function ReportLostPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
-    const files = Array.from(e.target.files);
+    const { ok: files, error } = validateImages(Array.from(e.target.files), selectedFiles.length);
+    e.target.value = "";
+    setErrorMsg(error);
+    if (!files.length) return;
     const newFiles = [...selectedFiles, ...files];
     setSelectedFiles(newFiles);
 

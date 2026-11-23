@@ -7,7 +7,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import CampusMap from "../components/CampusMap";
 import { Search, Camera, PlusCircle, Sparkles, Clock, MapPin, ArrowRight } from "lucide-react";
-import { api, getMediaUrl } from "../lib/api";
+import { api, assetUrl, onImgError } from "../lib/api";
 import { Item, Location } from "../lib/types";
 
 const CATEGORIES = [
@@ -193,7 +193,7 @@ export default function HomePage() {
               return (
                 <div key={item.id} className="glass rounded-3xl overflow-hidden hover:shadow-[0_0_30px_rgb(59_130_246/.25)] transition-all duration-300 flex flex-col group">
                   <div className="relative h-48 bg-slate-100 overflow-hidden">
-                    <img src={getMediaUrl(item.images?.[0]?.file_url || FALLBACK_IMG)} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <img src={assetUrl(item.images?.[0]?.file_url) || FALLBACK_IMG} alt={item.name} onError={onImgError} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     <div className="absolute top-3 left-3 flex items-center gap-1.5">
                       <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider text-white ${isFound ? "bg-emerald-600" : "bg-rose-600"}`}>
                         {isFound ? "Found" : "Lost"}

@@ -21,6 +21,30 @@ export function getMediaUrl(path: string): string {
   return new URL(path, `${new URL(API_BASE).origin}/`).toString();
 }
 
+export const API_ORIGIN = new URL(API_BASE).origin;
+
+export const IMG_FALLBACK = "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&auto=format&fit=crop&q=80";
+export const onImgError = (e: { currentTarget: HTMLImageElement }) => {
+  e.currentTarget.onerror = null;
+  e.currentTarget.src = IMG_FALLBACK;
+};
+
+const MAX_IMAGE_MB = 5;
+const MAX_IMAGES = 5;
+export function validateImages(files: File[], existing: number): { ok: File[]; error: string } {
+  const ok: File[] = [];
+  let error = "";
+  for (const f of files) {
+    if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(f.type)) error = `"${f.name}" is not a JPG, PNG, WEBP or GIF image.`;
+    else if (f.size > MAX_IMAGE_MB * 1024 * 1024) error = `"${f.name}" is larger than ${MAX_IMAGE_MB} MB.`;
+    else if (existing + ok.length >= MAX_IMAGES) error = `You can upload at most ${MAX_IMAGES} photos.`;
+    else ok.push(f);
+  }
+  return { ok, error };
+}
+
+export const assetUrl = (u?: string) => u ? getMediaUrl(u) : undefined;
+
 function getHeaders(isFormData = false): HeadersInit {
   const headers: Record<string, string> = {};
   if (!isFormData) {

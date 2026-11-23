@@ -1,66 +1,75 @@
 # CampusRadar
 
-Next.js frontend on Vercel and FastAPI backend on Render.
+Next.js frontend on Vercel; FastAPI and PostgreSQL on Render. Images are stored in PostgreSQL and QR PNGs are generated on demand, so no persistent filesystem disk is required for new uploads.
 
-## 1. Deploy the backend on Render
+## 1. Render backend and database
 
-Connect `Mayank-Kumar13/deploy`, branch `main`. Create a **Python 3 Web Service**:
+Import `render.yaml` using **New > Blueprint**, repository `Mayank-Kumar13/deploy`, branch `main`. It creates `campusradar-api` and `campusradar-db`, connects their `DATABASE_URL`, generates a secret, and asks for `FRONTEND_URL`. Set that to your Vercel origin, e.g. `https://your-project.vercel.app`, without a path or trailing slash. If your Vercel project has not deployed yet, use its intended domain and correct it after deployment.
+
+The Blueprint uses free plans for a demo. **Render free PostgreSQL expires after 30 days**; upgrade the database for longer use. Free web services also sleep when idle. See https://render.com/docs/free. Nothing is provisioned by committing this file.
+
+For manual Web Service setup, first create a Render PostgreSQL database in the same region, then use:
 
 | Setting | Value |
 | --- | --- |
+| Language | `Python 3` |
 | Root Directory | `backend` |
 | Build Command | `pip install -r requirements.txt` |
 | Start Command | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
 | Health Check Path | `/health` |
-| Python version environment variable | `PYTHON_VERSION=3.12.8` |
 
 Environment variables:
 
-- `SECRET_KEY`: a long random secret. Generate locally with `python -c "import secrets; print(secrets.token_urlsafe(48))"`. Never put it in the frontend or commit it.
-- `CORS_ORIGINS`: the exact Vercel frontend origin, e.g. `https://your-project.vercel.app`. No path. Multiple allowed origins may be comma-separated. Preview deployments must be explicitly added if used.
-
-### Keep database records and uploaded files after deploys
-
-The included `render.yaml` can also be imported as a Render Blueprint. It specifies a **paid Starter service plus a persistent disk**, generates `SECRET_KEY`, and asks for `CORS_ORIGINS`. It does not create resources by itself.
-
-For the same persistent setup when creating the service manually, attach a disk at `/var/data` and set:
-
 ```env
-DATABASE_URL=sqlite:////var/data/campusfind.db
-UPLOAD_DIR=/var/data/uploads
-QR_DIR=/var/data/qrcodes
+PYTHON_VERSION=3.12.8
+ENVIRONMENT=production
+DATABASE_URL=YOUR_RENDER_POSTGRES_INTERNAL_CONNECTION_URL
+SECRET_KEY=YOUR_LONG_RANDOM_SECRET
+FRONTEND_URL=https://YOUR-PROJECT.vercel.app
+SEED_DEMO_DATA=true
+MAX_UPLOAD_MB=5
+MAX_IMAGES_PER_ITEM=5
 ```
 
-Render's free web service has no persistent disk. You can omit these three variables for a temporary demo, but SQLite records, uploads, and generated QR files can disappear on restart/redeploy. A PostgreSQL `DATABASE_URL` is supported too; file uploads still require persistent storage.
+Generate `SECRET_KEY` with `python -c "import secrets; print(secrets.token_urlsafe(48))"`. Never put secrets or `DATABASE_URL` in Vercel's public variables or Git. Production refuses a missing/default secret or a SQLite database. Tables are initialized at startup; `SEED_DEMO_DATA=true` creates demo records only on an empty database.
 
-After deployment, open `https://YOUR-BACKEND.onrender.com/health` and `/docs`. Startup initializes tables and demo records. The existing demo login includes admin/staff access; this project remains an evaluation/demo app, not a hardened public production service.
+Optional `CORS_ORIGINS` accepts additional comma-separated origins. Optional `CORS_ORIGIN_REGEX` can allow specific preview domains; leave it empty unless needed. Use a narrowly scoped, anchored regex, not all Vercel domains.
 
-## 2. Deploy the frontend on Vercel
+Open `https://YOUR-API.onrender.com/health` and `/docs` after deployment. `/health` checks database connectivity.
+
+## 2. Vercel frontend
+
+Import the same repository and branch:
 
 | Setting | Value |
 | --- | --- |
-| Branch | `main` |
 | Root Directory | `frontend` |
-| Framework Preset | `Next.js` |
+| Framework | `Next.js` |
 | Build Command | `npm run build` |
 | Output Directory | `.next` |
 | Install Command | `npm ci` |
 | Node.js Version | `22.x` |
 
-Add this environment variable for Production and Preview, replacing the placeholder with the actual Render service URL:
+Set this variable for Production and Preview, using the actual Render URL:
 
 ```env
-NEXT_PUBLIC_API_URL=https://YOUR-BACKEND.onrender.com/api/v1
+NEXT_PUBLIC_API_URL=https://YOUR-API.onrender.com/api/v1
 ```
 
-`frontend/vercel.json` includes the build settings. Production builds require an HTTPS API URL and fail with a clear message if it is missing. `NEXT_PUBLIC_API_URL` is bundled into the browser at build time: redeploy after changing it.
+`frontend/vercel.json` contains the build settings and basic response headers. Production builds require an HTTPS backend URL. Redeploy Vercel after changing the public variable because Next.js bundles it at build time. Ensure Render's `FRONTEND_URL` matches the final frontend domain.
 
-If the final Vercel domain differs from the origin entered in Render, update Render's `CORS_ORIGINS` to match it. Verify login, reporting an item with an image, viewing its QR code, and adding a location as an admin.
+Verify login, report an item with an image, view its image and QR, and add a location as admin. Uploaded images are checked for actual supported image content, size and count. Default limits are five photos, five MB each; keep backend limits at five if using the current frontend defaults.
 
-## Local development
+## Existing deployments
 
-Copy `backend/.env.example` to `backend/.env` and set a local secret. In `backend`, run `pip install -r requirements.txt` and `uvicorn app.main:app --reload`.
+The new `stored_files` table is created automatically without deleting existing records. New photos use `/api/v1/files/...` and new QR codes use `/api/v1/qr/...`. Existing disk-based uploads still need their original files; this update does not recover or migrate files already lost from Render's ephemeral disk. Legacy `/static/...` routes remain supported while those files exist. Moving from SQLite to PostgreSQL starts a separate database; existing SQLite records are not automatically copied.
 
-In `frontend`, run `npm ci` and `npm run dev`. Development uses `http://localhost:8000/api/v1` if no frontend environment variable is set. For a production build, set `NEXT_PUBLIC_API_URL` first. `frontend/.env.example` lists its format.
+## Local development and verification
 
-Backend deployment smoke test: in `backend`, install `pip install -r requirements-dev.txt`, then run `python tests/deployment_smoke.py`. It uses a temporary database and upload directory to check CORS, login, admin actions, uploaded files, QR serving, and persistence across app restarts.
+Copy `backend/.env.example` to `backend/.env` and set a local secret. In `backend`, run `pip install -r requirements.txt` and `uvicorn app.main:app --reload`. SQLite is available for local development. Backend loads `backend/.env` first, then a root `.env` without overwriting existing environment variables. The root `.env.example` is a reference, not a production env file.
+
+In `frontend`, run `npm ci` and `npm run dev`; local API requests default to `http://localhost:8000/api/v1`. For a production build, set `NEXT_PUBLIC_API_URL` first. Example env files contain placeholders only.
+
+Backend smoke test: in `backend`, install `pip install -r requirements-dev.txt`, then run `python tests/deployment_smoke.py`. It uses a temporary database to check CORS, login, uploads, QR serving, invalid-upload rejection and restart persistence. The same test can check an empty disposable PostgreSQL database by setting `TEST_DATABASE_URL`; never point it at production.
+
+This retains the original demo logins, including staff/admin access. Use it as a demo; real public use requires a separate permissions and authentication review.

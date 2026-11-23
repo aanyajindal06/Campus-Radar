@@ -17,16 +17,22 @@ def main():
 
     with tempfile.TemporaryDirectory(prefix="campusradar-deploy-test-") as temp:
         os.environ.update(
-            DATABASE_URL="sqlite:///" + (Path(temp) / "test.db").as_posix(),
+            DATABASE_URL=os.getenv("TEST_DATABASE_URL") or "sqlite:///" + (Path(temp) / "test.db").as_posix(),
+            ENVIRONMENT="development",
+            SEED_DEMO_DATA="true",
             UPLOAD_DIR=str(Path(temp) / "uploads"),
             QR_DIR=str(Path(temp) / "qrcodes"),
             SECRET_KEY="test-only-secret-with-at-least-32-characters",
             CORS_ORIGINS="https://test-campus.vercel.app",
+            FRONTEND_URL="https://second-campus.vercel.app",
+            CORS_ORIGIN_REGEX="",
+            MAX_UPLOAD_MB="1",
+            MAX_IMAGES_PER_ITEM="2",
         )
         from app.main import app
         with TestClient(app) as client:
             assert client.get("/health").json()["database"] == "connected"
-            for origin, expected in [("https://test-campus.vercel.app", 200), ("https://untrusted.example", 400)]:
+            for origin, expected in [("https://test-campus.vercel.app", 200), ("https://second-campus.vercel.app", 200), ("https://untrusted.example", 400)]:
                 response = client.options("/api/v1/items/", headers={"Origin": origin, "Access-Control-Request-Method": "POST", "Access-Control-Request-Headers": "authorization,content-type"})
                 assert response.status_code == expected, response.text
             login = client.post("/api/v1/auth/demo-login/admin")
@@ -36,9 +42,23 @@ def main():
             assert loc.status_code == 200, loc.text
             image = BytesIO()
             Image.new("RGB", (10, 10), "blue").save(image, format="PNG")
+            form = {"type": "found", "name": "Invalid upload", "category": "Electronics", "description": "Upload validation", "date_event": "2026-11-23"}
+            before = len(client.get("/api/v1/items/").json())
+            for files, expected in [
+                ({"images": ("fake.png", b"not an image", "image/png")}, 400),
+                ({"images": ("large.png", b"x" * (1024 * 1024 + 1), "image/png")}, 413),
+                ([("images", (f"photo{i}.png", image.getvalue(), "image/png")) for i in range(3)], 400),
+            ]:
+                rejected = client.post("/api/v1/items/", headers=headers, data=form, files=files)
+                assert rejected.status_code == expected, rejected.text
+            assert len(client.get("/api/v1/items/").json()) == before
             item = client.post("/api/v1/items/", headers=headers, data={"type": "found", "name": "Deployment check", "category": "Electronics", "description": "Deployment test image", "date_event": "2026-11-23"}, files={"images": ("test.png", image.getvalue(), "image/png")})
             assert item.status_code in (200, 201), item.text
             data = item.json()
+            assert data["qr_image_url"].startswith("/api/v1/qr/")
+            assert data["images"][0]["file_url"].startswith("/api/v1/files/")
+            assert not list((Path(temp) / "uploads").iterdir())
+            assert not list((Path(temp) / "qrcodes").iterdir())
             assert client.get(data["qr_image_url"]).status_code == 200
             assert client.get(data["images"][0]["file_url"]).status_code == 200
             item_id = data["id"]
@@ -46,7 +66,7 @@ def main():
             assert client.get(f"/api/v1/items/{item_id}").status_code == 200
             assert client.get(data["qr_image_url"]).status_code == 200
             assert client.get(data["images"][0]["file_url"]).status_code == 200
-        print("PASS: startup, DB health, allowed/blocked CORS, demo login, admin location, upload, QR, restart persistence")
+        print("PASS: startup, DB health, allowed/blocked CORS, demo login, admin location, upload validation, DB images, diskless QR, restart persistence")
 
 
 if __name__ == "__main__":
