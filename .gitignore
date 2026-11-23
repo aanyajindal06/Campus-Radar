@@ -10,3 +10,7 @@ backend/.venv/
 backend/uploads/
 backend/qrcodes/
 backend/.data/
+
+# Private environment files at any project level
+.env*
+!.env.example
