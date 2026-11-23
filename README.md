@@ -66,7 +66,7 @@ The new `stored_files` table is created automatically without deleting existing 
 
 ## Local development and verification
 
-Copy `backend/.env.example` to `backend/.env` and set a local secret. In `backend`, run `pip install -r requirements.txt` and `uvicorn app.main:app --reload`. SQLite is available for local development. Backend loads `backend/.env` first, then a root `.env` without overwriting existing environment variables. The root `.env.example` is a reference, not a production env file.
+For local development, create `backend/.env` with `ENVIRONMENT=development`, `DATABASE_URL=sqlite:///./campusfind.db`, `FRONTEND_URL=http://localhost:3000`, and a generated `SECRET_KEY`. The `.env.example` files describe production settings, so do not copy their production environment flag for local SQLite use. In `backend`, run `pip install -r requirements.txt` and `uvicorn app.main:app --reload`. SQLite is available for local development. Backend loads `backend/.env` first, then a root `.env` without overwriting existing environment variables. The root `.env.example` is a reference, not a production env file.
 
 In `frontend`, run `npm ci` and `npm run dev`; local API requests default to `http://localhost:8000/api/v1`. For a production build, set `NEXT_PUBLIC_API_URL` first. Example env files contain placeholders only.
 
