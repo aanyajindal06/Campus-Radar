@@ -1,0 +1,28 @@
+# This configuration uses a PAID starter service and persistent disk.
+# No resources are provisioned until you create a Blueprint in Render.
+services:
+  - type: web
+    name: campusradar-backend
+    runtime: python
+    plan: starter
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    disk:
+      name: campusradar-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false
+      - key: DATABASE_URL
+        value: sqlite:////var/data/campusfind.db
+      - key: UPLOAD_DIR
+        value: /var/data/uploads
+      - key: QR_DIR
+        value: /var/data/qrcodes

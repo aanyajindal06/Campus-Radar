@@ -1,8 +1,10 @@
 import os
-from fastapi import FastAPI, Depends
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 from .config import settings
 from .database import engine, Base, get_db
@@ -18,7 +20,17 @@ from .routers import (
     admin_router
 )
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    on_startup()
+    try:
+        yield
+    finally:
+        engine.dispose()
+
+
 app = FastAPI(
+    lifespan=lifespan,
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description="Smart Lost & Found Management System for Colleges with AI Visual Search, Hybrid Matching, Campus Location Mapping, and QR Code Staff Verification."
@@ -26,7 +38,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -44,7 +56,6 @@ app.include_router(rewards_router.router, prefix=settings.API_V1_STR)
 app.include_router(notifications_router.router, prefix=settings.API_V1_STR)
 app.include_router(admin_router.router, prefix=settings.API_V1_STR)
 
-@app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
     
@@ -67,6 +78,7 @@ def root():
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)):
     try:
+        db.execute(text("SELECT 1"))
         return {"status": "healthy", "database": "connected"}
     except Exception as e:
-        return {"status": "unhealthy", "error": str(e)}
+        raise HTTPException(status_code=503, detail="Database unavailable") from e

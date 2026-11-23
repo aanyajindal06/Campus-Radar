@@ -11,7 +11,15 @@ import {
   AdminStats
 } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const configuredApiUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1").replace(/\/+$/, "");
+export const API_BASE = configuredApiUrl.endsWith("/api/v1")
+  ? configuredApiUrl
+  : `${configuredApiUrl}/api/v1`;
+
+// Uploaded files and QR codes are served by Render, not the Vercel frontend.
+export function getMediaUrl(path: string): string {
+  return new URL(path, `${new URL(API_BASE).origin}/`).toString();
+}
 
 function getHeaders(isFormData = false): HeadersInit {
   const headers: Record<string, string> = {};

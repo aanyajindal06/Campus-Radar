@@ -19,7 +19,7 @@ import {
   Lock,
   ArrowUpRight
 } from "lucide-react";
-import { api } from "../../lib/api";
+import { api, API_BASE } from "../../lib/api";
 import { AdminStats, HeatmapPoint, User, Location } from "../../lib/types";
 
 export default function AdminDashboardPage() {
@@ -67,7 +67,7 @@ export default function AdminDashboardPage() {
     if (!newLocName || !newLocBuilding) return;
     setLocAdding(true);
     try {
-      await fetch("http://localhost:8000/api/v1/locations/", {
+      const response = await fetch(`${API_BASE}/locations/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -81,6 +81,7 @@ export default function AdminDashboardPage() {
           description: "University facility"
         })
       });
+      if (!response.ok) throw new Error("Failed to add location");
       setNewLocName("");
       setNewLocBuilding("");
       loadAdminData();

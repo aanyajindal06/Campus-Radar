@@ -5,3 +5,8 @@ __pycache__/
 frontend/node_modules/
 frontend/.next/
 .env
+
+backend/.venv/
+backend/uploads/
+backend/qrcodes/
+backend/.data/

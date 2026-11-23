@@ -24,7 +24,7 @@ import {
   Lock,
   UserCheck
 } from "lucide-react";
-import { api } from "../../../lib/api";
+import { api, getMediaUrl } from "../../../lib/api";
 import { Item, MatchResult, ScoreBreakdown } from "../../../lib/types";
 import { useAuth } from "../../../lib/authContext";
 
@@ -123,7 +123,7 @@ function ItemDetailsPageContent() {
   const isStaffOrAdmin = user && (user.role === "staff" || user.role === "admin");
 
   const imagesList = item.images && item.images.length > 0
-    ? item.images.map((img) => img.file_url)
+    ? item.images.map((img) => getMediaUrl(img.file_url))
     : ["https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop&q=80"];
 
   return (
@@ -211,7 +211,7 @@ function ItemDetailsPageContent() {
                 <div className="flex items-center gap-4 pt-1">
                   {item.qr_image_url ? (
                     <img
-                      src={`http://localhost:8000${item.qr_image_url}`}
+                      src={getMediaUrl(item.qr_image_url)}
                       alt="Item QR Code"
                       className="w-24 h-24 object-contain border border-slate-200 rounded-xl p-1 bg-white"
                     />
@@ -227,7 +227,7 @@ function ItemDetailsPageContent() {
                     </p>
                     {item.qr_image_url && (
                       <a
-                        href={`http://localhost:8000${item.qr_image_url}`}
+                        href={getMediaUrl(item.qr_image_url)}
                         download={`${item.tracking_code}_qr.png`}
                         target="_blank"
                         rel="noreferrer"
@@ -454,7 +454,7 @@ function ItemDetailsPageContent() {
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <img
-                          src={m.item.images?.[0]?.file_url || "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=100&auto=format&fit=crop&q=80"}
+                          src={getMediaUrl(m.item.images?.[0]?.file_url || "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=100&auto=format&fit=crop&q=80")}
                           alt={m.item.name}
                           className="w-12 h-12 rounded-lg object-cover border border-slate-200 shrink-0"
                         />

@@ -20,7 +20,7 @@ import {
   ArrowLeft,
   Award
 } from "lucide-react";
-import { api } from "../../lib/api";
+import { api, getMediaUrl } from "../../lib/api";
 import { Location } from "../../lib/types";
 import { useAuth } from "../../lib/authContext";
 import confetti from "canvas-confetti";
@@ -177,7 +177,7 @@ export default function ReportFoundPage() {
               {successData.qr_image_url ? (
                 <div className="p-3 bg-white rounded-xl shadow-xs border border-slate-200 inline-block">
                   <img
-                    src={`http://localhost:8000${successData.qr_image_url}`}
+                    src={getMediaUrl(successData.qr_image_url)}
                     alt="Generated Item QR"
                     className="w-44 h-44 object-contain mx-auto"
                   />
