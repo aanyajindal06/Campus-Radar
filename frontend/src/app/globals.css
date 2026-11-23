@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+@theme {
+  --color-slate-50: #060b18;
+  --color-slate-100: #0c1426;
+  --color-slate-200: #1c2a4a;
+  --color-slate-300: #2e4373;
+  --color-slate-400: #8296b8;
+  --color-slate-500: #a3b3d0;
+  --color-slate-600: #c3cfe6;
+  --color-slate-700: #dbe3f2;
+  --color-slate-800: #eef2fa;
+  --color-slate-900: #f6f9ff;
+
+  --color-blue-50: #0b1a3a;
+  --color-blue-100: #10265a;
+  --color-blue-200: #1e3a8a;
+  --color-blue-300: #2554c7;
+  --color-blue-400: #60a5fa;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #60a5fa;
+  --color-blue-800: #93c5fd;
+  --color-blue-900: #0b1a3a;
+  --color-indigo-50: #0b1a3a;
+  --color-indigo-100: #10265a;
+  --color-indigo-200: #1e3a8a;
+  --color-indigo-500: #3b82f6;
+  --color-indigo-600: #1d4ed8;
+  --color-indigo-700: #93c5fd;
+  --color-indigo-900: #0b1a3a;
+  --color-purple-50: #0e1a3a;
+  --color-purple-100: #14245a;
+  --color-purple-200: #1e3a8a;
+  --color-purple-600: #1d4ed8;
+  --color-purple-700: #93c5fd;
+  --color-teal-100: #14245a;
+  --color-teal-700: #93c5fd;
+
+  --color-emerald-50: #0f2418;
+  --color-emerald-100: #123220;
+  --color-emerald-200: #1c5a3a;
+  --color-emerald-300: #2f8f5b;
+  --color-emerald-700: #6ee7b7;
+  --color-emerald-800: #a7f3d0;
+  --color-rose-50: #2d1015;
+  --color-rose-100: #40141c;
+  --color-rose-200: #7a2433;
+  --color-rose-300: #b43a52;
+  --color-rose-700: #fda4af;
+  --color-rose-800: #fecdd3;
+  --color-amber-50: #2e1f07;
+  --color-amber-100: #44300a;
+  --color-amber-200: #7a5410;
+  --color-amber-300: #d99a1f;
+  --color-amber-700: #fcd34d;
+  --color-amber-800: #fde68a;
+  --color-yellow-50: #2e2807;
+  --color-yellow-100: #443a0a;
+}
+
+:root {
+  --background: #060b18;
+  --foreground: #f6f9ff;
+  --glow: #3b82f6;
+}
+
+body {
+  background: radial-gradient(ellipse 80% 40% at 50% 0, #0d1b3d 0, #060b18 60%) fixed #060b18;
+  color: #f6f9ff;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #060b18; }
+::-webkit-scrollbar-thumb { background: #2e4373; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+
+.bg-white, .bg-white\/95, .bg-white\/90, .bg-white\/80, .bg-white\/70 {
+  background-color: #0c1426;
+  background-image: linear-gradient(160deg, rgb(59 130 246 / .07), transparent 55%);
+}
+.bg-white\/10, .bg-white\/20 { background-color: rgb(96 165 250 / .1); }
+.border-white\/15, .border-white\/30 { border-color: rgb(96 165 250 / .25); }
+input, select, textarea {
+  background-color: rgb(255 255 255 / .04);
+  color: #f6f9ff;
+  border-color: #1c2a4a;
+}
+input::placeholder, textarea::placeholder { color: #8296b8; }
+.bg-white input, .bg-white select { background-color: rgb(255 255 255 / .05); }
+.shadow-xs, .shadow-2xs, .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl {
+  --tw-shadow-color: rgb(59 130 246 / .18);
+}
+
+.glow-btn {
+  background: linear-gradient(180deg, #60a5fa, #1d4ed8);
+  box-shadow: 0 0 22px rgb(59 130 246 / .45), inset 0 1px 0 rgb(255 255 255 / .35);
+  color: #fff;
+}
+.glow-btn:hover { filter: brightness(1.1); }
+.ghost-btn {
+  border: 1px solid rgb(255 255 255 / .22);
+  background: rgb(255 255 255 / .04);
+  color: #f6f9ff;
+}
+.ghost-btn:hover { background: rgb(255 255 255 / .1); }
+.glass {
+  background: linear-gradient(160deg, rgb(59 130 246 / .12), rgb(255 255 255 / .02) 60%);
+  border: 1px solid rgb(96 165 250 / .22);
+  backdrop-filter: blur(10px);
+}
+.hero-glow {
+  background:
+    radial-gradient(ellipse 70% 38% at 50% 105%, #3b82f6 0, rgb(37 99 235 / .55) 38%, transparent 72%),
+    radial-gradient(circle at 50% 0, rgb(255 255 255 / .06) 1px, transparent 1.5px) 0 0 / 14px 14px,
+    linear-gradient(#070d1c, #0a1230);
+}
+.footer-glow {
+  background: linear-gradient(180deg, #3b82f6 0, #1d4ed8 55%, #1e3a8a);
+  color: #fff;
+}
+.thin-title { font-weight: 300; letter-spacing: -0.02em; }
+
+@keyframes pulse-subtle { 0%, 100% { opacity: 1; } 50% { opacity: .7; } }
+.animate-subtle { animation: pulse-subtle 3s cubic-bezier(.4, 0, .6, 1) infinite; }
+
+.leaflet-container { width: 100%; height: 100%; border-radius: .75rem; z-index: 10; }
